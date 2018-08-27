@@ -6,6 +6,10 @@ import numpy as np
 def get_image(image_path, resize_w, resize_h, is_resize=True):
     return transform(imread(image_path), resize_w, resize_h, is_resize)
 
+def get_image_info(image_path):
+    image = imread(image_path)
+    return image.shape
+
 def imread(path):
     return scipy.misc.imread(path, mode='RGB').astype(np.float)
 

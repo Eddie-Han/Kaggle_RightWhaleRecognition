@@ -1,5 +1,7 @@
 import tensorflow as tf
 import numpy as np
+import os as os
+
 
 def conv2d(input, output_dim,
         k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
@@ -82,3 +84,21 @@ def loss_func(loss_func, actual, values, epsilon=1e-10):
 
     else:
         assert False, 'Invalid loss function : {}'.format(loss_func)
+
+
+def checkpoint_save(sess, saver, checkpoint_dir):
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
+    print(" [*] Saving checkpoint : {} \n".format(checkpoint_dir))
+    saver.save(sess, os.path.join(checkpoint_dir), global_step=None)
+
+def checkpoint_load(sess, saver, checkpoint_dir):
+    print(" [*] Reading checkpoints : {} \n".format(checkpoint_dir))
+
+    ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
+    if ckpt and ckpt.model_checkpoint_path:
+        saver.restore(sess, ckpt.model_checkpoint_path)
+        return True
+    else:
+        return False

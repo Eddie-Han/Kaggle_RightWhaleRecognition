@@ -45,10 +45,21 @@ localize_hyper_param_arg.add_argument('--localize_image_resize_w', type=int, def
                                       help='TODO')
 localize_hyper_param_arg.add_argument('--localize_image_resize_h', type=int, default=256,
                                       help='TODO')
+localize_hyper_param_arg.add_argument('--localize_validation_image_ratio', type=float, default=0.02,
+                                      help='TODO')
 
+log_arg = add_argument_group('logging')
+log_arg.add_argument('--localizer_log', type=str, default = './localizer_log',
+                     help = 'TODO')
+log_arg.add_argument('--localizer_checkpoint', type=str, default = '/localizer_checkpoint',
+                     help = 'TODO')
+log_arg.add_argument('--localizer_result', type=str, default = '/localizer_result',
+                     help = 'TODO')
+log_arg.add_argument('--checkpoint_repository', type=str, default = './checkpoint_repository',
+                     help = 'TODO')
 # etc
 etc_arg = add_argument_group('etc')
-etc_arg.add_argument('--log_gpu_info', type=str2bool, default=True,
+etc_arg.add_argument('--log_gpu_info', type=str2bool, default=False,
                      help='The boolean value about logging gpu info')
 
 def get_config():

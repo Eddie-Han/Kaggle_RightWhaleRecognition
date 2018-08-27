@@ -3,21 +3,79 @@ from tensor_util import *
 from data_loader import *
 
 class Localizer:
-    def __init__(self, sess, data_loader, ensemble_size, input_size, minibatch_size, base_lr):
+    def __init__(self, sess, data_loader, ensemble_size, input_size, minibatch_size, base_lr, log_path, checkpoint_path):
         self.sess = sess
         self.ensemble_size = ensemble_size
         self.data_loader = data_loader
         self.input_size = input_size
         self.minibatch_size = minibatch_size
         self.base_lr = base_lr
+        self.log_path = log_path
+        self.checkpoint_path = checkpoint_path
 
     def do_train(self):
         for iter in range(self.ensemble_size-1):
             self._do_train_iter(iter)
+            # data_loader reset 하는 과정 포함되야 한다. 다음 network train 할때 epoch이 유지되는 현상 있음.
 
     def _do_train_iter(self, ensemble_net_iter):
         ensemble_net_name = 'LocalizeNet-{}'.format(ensemble_net_iter)
         localizer_net = self._build_network(ensemble_net_name)
+        check_point_saver = tf.train.Saver(max_to_keep=1)
+        tf.global_variables_initializer().run()
+
+        BATCH_MAX = 3000
+        TRAIN_LOGGING_STEP = 5
+        TEST_PERIOD = 50
+        SAVE_MODEL_PERIOD = 1000
+        for train_step in range(0, BATCH_MAX):
+            batch_images, batch_images_info = self.data_loader.next_batch(do_normalize=True)
+            y_actual_input = [[batch_image_info['label_x'], batch_image_info['label_y'],
+                               batch_image_info['label_width'], batch_image_info['label_height']]
+                for batch_image_info in batch_images_info]
+            _, loss_value = self.sess.run([localizer_net.optimizer, localizer_net.loss]
+                                          , feed_dict={localizer_net.input_tensor: batch_images,
+                                                       localizer_net.y_actual: y_actual_input,
+                                                       localizer_net.is_training:True})
+            if train_step % TRAIN_LOGGING_STEP == 0:
+                debug_str = str('[' + ensemble_net_name + ']' + 'epoch : {0:>03} train_step = {1:>05}, loss = {2:>05} \n'
+                    .format(self.data_loader.current_epoch(), train_step, loss_value))
+                print(debug_str)
+                train_result_debug_file = open(
+                    self.log_path  + '/' + ensemble_net_name + '_result_debug.txt', 'a')
+                train_result_debug_file.write(debug_str)
+                train_result_debug_file.close()
+
+            if train_step % TEST_PERIOD == 0 :
+                self._do_train_test(localizer_net, ensemble_net_name, train_step)
+
+            if train_step % SAVE_MODEL_PERIOD == 0:
+                checkpoint_save(sess= self.sess, saver = check_point_saver,
+                                checkpoint_dir=self.log_path + self.checkpoint_path + '/' + ensemble_net_name)
+                print(str('Save checkpoint - {}'.format(ensemble_net_name)))
+
+    def _do_train_test(self, net, net_name, train_step):
+        loss_sum = 0.
+        for test_step in range(0, 9999):
+            batch_images, batch_images_info = self.data_loader.next_batch_test(do_normalize=True)
+            if len(batch_images) == 0:
+                debug_str = str('[TEST_RESULT][' + net_name + ']' + 'epoch : {0:>03} train_step = {1:>05}, loss = {2:>05} \n'
+                          .format(self.data_loader.current_epoch(), train_step, loss_sum / test_step))
+                print(debug_str)
+                train_result_debug_file = open(
+                    self.log_path + '/' + net_name + '_result_debug.txt', 'a')
+                train_result_debug_file.write(debug_str)
+                train_result_debug_file.close()
+                break
+
+            y_actual_input = [[batch_image_info['label_x'], batch_image_info['label_y'],
+                               batch_image_info['label_width'], batch_image_info['label_height']]
+                              for batch_image_info in batch_images_info]
+            _, loss_value = self.sess.run([net.optimizer, net.loss]
+                                          , feed_dict={net.input_tensor: batch_images,
+                                                       net.y_actual: y_actual_input,
+                                                       net.is_training: False})
+            loss_sum +=  loss_value
 
 
     def _build_network(self, ensemble_net_name):

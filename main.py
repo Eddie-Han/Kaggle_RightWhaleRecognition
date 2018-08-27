@@ -18,6 +18,15 @@ def main(config):
 
 def train(config):
 
+    if not os.path.exists(config.localizer_log):
+        os.makedirs(config.localizer_log)
+    if not os.path.exists(config.localizer_log + config.localizer_checkpoint):
+        os.makedirs(config.localizer_log + config.localizer_checkpoint)
+    if not os.path.exists(config.localizer_log + config.localizer_result):
+        os.makedirs(config.localizer_log + config.localizer_result)
+    if not os.path.exists(config.checkpoint_repository):
+        os.makedirs(config.checkpoint_repository)
+
     tensor_config = tf.ConfigProto(log_device_placement=config.log_gpu_info,
                                    device_count={'GPU': 1})
     tensor_config.gpu_options.allow_growth = True
@@ -41,7 +50,9 @@ def train_localize(config, tensor_config):
             ensemble_size=  config.localize_ensemble_size,
             input_size=(config.localize_image_resize_w, config.localize_image_resize_h),
             minibatch_size=config.localize_minibatch_size,
-            base_lr=config.localize_base_lr
+            base_lr=config.localize_base_lr,
+            log_path=config.localizer_log,
+            checkpoint_path=config.localizer_checkpoint
         )
         localizer.do_train()
 

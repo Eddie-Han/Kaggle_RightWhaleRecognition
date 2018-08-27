@@ -5,3 +5,10 @@
 .idea/vcs.xml
 .idea/workspace.xml
 __pycache__/Config.cpython-35.pyc
+*.txt
+localizer_log/
+checkpoint_repository/
+__pycache__/
+*.pyc
+__pycache__/localizer.cpython-35.pyc
+__pycache__/localizer.cpython-35.pyc
